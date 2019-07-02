@@ -1,0 +1,149 @@
+---
+title: "Reproducible Research Project One"
+author: "Amanda Mae"
+date: "7/1/2019"
+output: html_document
+---
+#This is the code for Reproducible Research, Course Project One
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Step One: Code for reading in the dataset and/or processing the data
+
+```{r}
+setwd("~/Desktop/R Respository/Reproducible Research")
+activity <- read.csv("activity.csv", header = TRUE, sep = ",")
+```
+
+###Check that the file was read in correctly
+
+```{r}
+dim(activity)
+variable.names(activity)
+str(activity)
+```
+
+##Step Two: Histogram of the total number of steps taken each day
+
+*Step TwoA: Create variable steps per day*
+
+```{r}
+steps_day<-with(activity,tapply(steps,date,sum,na.rm=TRUE))
+```
+
+*Step TwoB: Create and Save Histogram*
+
+```{r echo=FALSE}
+hist(steps_day,col = "blue",xlab = "Total Steps",ylab = "Days",main = "Frequency of Total Number of Steps per Day")
+```
+
+
+
+##Step Three: Mean and median number of steps taken each day
+
+```{r}
+mean(steps_day)
+median(steps_day)
+```
+
+*OR (produces both)*
+
+
+```{r}
+summary(steps_day)
+```
+
+
+#Step Four: Time series plot of the average number of steps taken
+
+```{r, echo=FALSE}
+avg_steps<-with(activity,tapply(steps,interval,mean,na.rm=TRUE))
+intervals<-unique(activity$interval)
+Time_Series_Data<-data.frame(cbind(avg_steps,intervals))
+plot(Time_Series_Data$intervals,Time_Series_Data$avg_steps,type = "l",xlab = "Intervals", 
+     ylab = "Average Steps",main = "Average Steps per Interval")
+```
+
+#Step Five: The 5-minute interval that, on average, contains the maximum number of steps
+
+```{r}
+index<-which.max(Time_Series_Data$avg_steps)
+max<-Time_Series_Data[index,2]
+max
+```
+
+
+#Step Six: Code to describe and show a strategy for imputing missing data
+
+*How many missing values do we have?*
+```{r}
+sum(is.na(activity$steps))
+```
+*Replace missing values with average daily value*
+```{r}
+index<-which(is.na(activity$steps))
+l<-length(index)
+   steps_avg<-with(activity,tapply(steps,date,mean,na.rm=TRUE))
+   na<-mean(steps_avg,na.rm = TRUE)
+    for (i in 1:l) {
+    activity[index[i],1]<-na
+    }
+```
+
+*Check All Missing Values Have Been Replaced*
+```{r}
+sum(is.na(activity$steps))
+str(activity)
+```
+
+
+#Step Seven: Histogram of the total number of steps taken each day after missing values are imputed
+
+```{r}
+avg_steps2<-with(activity,tapply(steps,date,sum,na.rm=TRUE))
+hist(avg_steps2,col = "yellow",xlab = "Total Steps",ylab = "Days",main = "Frequency of Total Number of Steps per Day")
+```
+
+
+#Step Eight: Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+```{r}
+library(dplyr)
+```
+
+*Part One is Identifying and Tagging Weekends/Weekdays*
+
+```{r}
+activity$day <- weekdays(as.Date(activity$date))
+head(activity)
+activity$day_type <- ifelse(activity$day == "Saturday" | activity$day == "Sunday", "weekend", "weekday")
+head(activity)
+str(activity)
+```
+
+*Now Plot!*
+```{r}
+StepsPerInterval.weekend <- tapply(activity[activity$day_type == "weekend" ,]$steps, activity[activity$day_type == "weekend" ,]$interval, mean, na.rm = TRUE)
+
+StepsPerInterval.weekday <- tapply(activity[activity$day_type == "weekday" ,]$steps, activity[activity$day_type == "weekday" ,]$interval, mean, na.rm = TRUE)
+
+par(mfrow=c(1,2))
+
+plot(as.numeric(names(StepsPerInterval.weekday)), 
+     StepsPerInterval.weekday, 
+     xlab = "Interval", 
+     ylab = "Steps", 
+     main = "Activity Pattern (Weekdays)", 
+     type = "l")
+
+plot(as.numeric(names(StepsPerInterval.weekend)), 
+     StepsPerInterval.weekend, 
+     xlab = "Interval", 
+     ylab = "Steps", 
+     main = "Activity Pattern (Weekends)", 
+     type = "l")
+```
+
+#Step Nine: All Code in R Markdown!
